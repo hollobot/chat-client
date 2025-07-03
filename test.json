@@ -1,0 +1,31 @@
+{
+	"contactName": "测试群聊",
+	"lastMessage": "admin加入了群组",
+	"memberCount": 3,
+	"messageContent": "admin加入了群组",
+	"messageType": 9,
+	"recipientId": "G52052820250",
+	"reecipientType": 1,
+	"sendTime": 1748753592265,
+	"sendUserId": "U42417020250",
+	"sendUserNickName": "世界",
+	"sessionId": "1c1be37498a82000cfbdcefbbab2c348",
+	"status": 1,
+	"uuid": "95942169-319e-428d-a5f4-88e0e1bb1a85",
+
+	"abc": {
+		"contactName": "测试群聊",
+		"lastMessage": "admin加入了群组",
+		"memberCount": 3,
+		"messageContent": "admin加入了群组",
+		"messageType": 9,
+		"recipientId": "G52052820250",
+		"recipientType": 1,
+		"sendTime": 1748753592265,
+		"sendUserId": "U73005020250",
+		"sendUserNickName": "admin",
+		"sessionId": "1c1be37498a82000cfbdcefbbab2c348",
+		"status": 1,
+		"uuid": "b6ee1fb1-33e0-4610-ae23-21d755f4041d"
+	}
+}

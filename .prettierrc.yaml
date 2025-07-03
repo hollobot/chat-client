@@ -1,0 +1,19 @@
+printWidth: 100
+tabWidth: 4
+useTabs: true
+semi: true
+singleQuote: false
+trailingComma: none
+bracketSpacing: true
+jsxBracketSameLine: false
+arrowParens: always
+endOfLine: crlf
+vueIndentScriptAndStyle: true
+overrides:
+  - files: "*.vue"
+    options:
+      parser: vue
+  - files: "*.ts"
+    options:
+      parser: typescript
+

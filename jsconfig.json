@@ -1,0 +1,8 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".", // 基准路径
+		"paths": {
+			"@/*": ["src/renderer/src/*"] // @ 别名映射到 src 目录
+		}
+	}
+}
