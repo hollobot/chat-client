@@ -1,6 +1,6 @@
 <template>
 	<div class="root">
-		<div class="custom-titlebar">微信</div>
+		<div class="custom-titlebar">SwiftChat</div>
 		<div class="content">
 			<div class="avatar">
 				<el-avatar shape="square" :size="70" :src="avatarPath" />
@@ -79,7 +79,7 @@
 </template>
 
 <script setup>
-	import { ref, watch } from "vue";
+	import { onMounted, ref, watch } from "vue";
 	import avatar from "@/assets/image/avatar/avatar.jpg";
 	const avatarPath = ref(avatar);
 	import { checkCode, login } from "@/api/userApi";
@@ -114,7 +114,7 @@
 	const rules = ref({
 		email: [{ validator: customCheck(ruleInfo.email), trigger: "blur" }],
 		password: [{ validator: customCheck(ruleInfo.password), trigger: "blur" }],
-		checkCode: [{ validator: customCheck(ruleInfo.checkCode), trigger: "blur" }]
+		checkCode: [{ validator: customCheck(ruleInfo.checkCode), trigger: ["change", "blur"] }]
 	});
 
 	const error = ref();
@@ -151,8 +151,6 @@
 		sessionStorage.setItem("codeKey", codeKey);
 		checkCodeBase64.value = codeBase64;
 	}
-
-	refreshCheckCode();
 
 	/**
 	 * 跳转注册
@@ -239,11 +237,17 @@
 
 	const init = () => {
 		// 发送初始化数据给主进程
+		window.ipcRenderer.send("setLocalStore", { key: "prot", value: api.prot });
 		window.ipcRenderer.send("setLocalStore", { key: "prodDomain", value: api.prodDomain });
 		window.ipcRenderer.send("setLocalStore", { key: "devDomain", value: api.devDomain });
 		window.ipcRenderer.send("setLocalStore", { key: "prodWsDomain", value: api.prodWsDomain });
 		window.ipcRenderer.send("setLocalStore", { key: "devWsDomain", value: api.devWsDomain });
 	};
+
+	onMounted(() => {
+		// 获取验证码
+		refreshCheckCode();
+	});
 </script>
 
 <style lang="scss">
@@ -351,4 +355,3 @@
 			transform 0.5s ease; /* 动画时间和过渡效果 */
 	}
 </style>
-

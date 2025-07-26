@@ -1,9 +1,6 @@
-import { name } from "@electron-toolkit/eslint-config";
 import {
-	createMemoryHistory,
 	createRouter,
 	createWebHashHistory,
-	createWebHistory
 } from "vue-router";
 
 const routes = [

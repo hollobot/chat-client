@@ -9,7 +9,7 @@ const NODE_ENV = process.env.NODE_ENV;
 
 // 获取系统用户的个人文件夹 C:\Users\用户名
 const userDir = os.homedir();
-const dbFolder = userDir + (NODE_ENV === "development" ? "\\chat-dev" : "\\chat-test");
+const dbFolder = userDir + (NODE_ENV === "development" ? "\\chat-dev" : "\\chat-prod");
 if (!fs.existsSync(dbFolder)) {
 	fs.mkdirSync(dbFolder);
 }

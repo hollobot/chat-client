@@ -31,7 +31,7 @@
 				<div class="text info benefits" :title="props.userContactInfo.name">
 					昵称：{{ props.userContactInfo.name }}
 				</div>
-				<div class="text info">微信号：{{ props.userContactInfo.id }}</div>
+				<div class="text info">账号{{ props.userContactInfo.id }}</div>
 				<div class="text info">地区：{{ props.userContactInfo.areaName }}</div>
 			</div>
 

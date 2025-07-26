@@ -6,11 +6,21 @@ import { api } from "./src/renderer/src/constant/api";
 export default defineConfig({
 	main: {
 		plugins: [externalizeDepsPlugin()]
+		//选项来分别指定主进程、渲染器和预加载脚本的输出目录
+		// build: {
+		// 	outDir: "dist/main"
+		// }
 	},
 	preload: {
 		plugins: [externalizeDepsPlugin()]
+		// build: {
+		// 	outDir: "dist/preload"
+		// }
 	},
 	renderer: {
+		// build: {
+		// 	outDir: "dist/renderer"
+		// },
 		//..other config
 		css: {
 			preprocessorOptions: {
@@ -30,12 +40,9 @@ export default defineConfig({
 			port: api.prot,
 			// 是否开启 https
 			https: false,
-			headers: {
-				// "Content-Security-Policy": "img-src 'self' http://127.0.0.1:*  data: blob:;"
-			},
 			proxy: {
 				"/api": {
-					target: "http://localhost:80", // 目标服务器地址
+					target: api.devDomain, // 目标服务器地址
 					changeOrigin: true, // 改变请求的源
 					rewrite: (path) => path.replace(/^\/api/, "") // 可选：重写路径
 				}
@@ -44,4 +51,5 @@ export default defineConfig({
 		plugins: [vue()]
 	}
 });
+
 

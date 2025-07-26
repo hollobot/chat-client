@@ -35,6 +35,12 @@ import {
 } from "./ipc";
 import { setWindowsMap } from "./windowProxy";
 
+// 设置应用名称
+app.setName("SwiftChat");
+
+// 设置应用版本
+app.setVersion("1.0.0");
+
 function createWindow() {
 	const windowInit = (win) => {
 		// TODO
@@ -48,16 +54,17 @@ function createWindow() {
 
 	// Create the browser window.
 	const mainWindow = new BrowserWindow({
+		title: "SwiftChat",
 		width: 350, // 宽度
 		height: 480, // 高度
 		resizable: false, // 禁止用户调整窗口大小
 		center: true, // 窗口居中
-		title: "微信登录",
 		show: false, //窗口会立即显示，而不等内容加载完成
 		// frame: false, // 隐藏默认窗口边框，启用自定义标题栏
 		autoHideMenuBar: true, // 是否隐藏菜单栏
 		titleBarStyle: "hidden",
-
+		icon, // 设置窗口图标
+		// 在 Linux 上设置图标
 		...(process.platform === "linux" ? { icon } : {}),
 		webPreferences: {
 			preload: join(__dirname, "../preload/index.js"),
@@ -72,8 +79,8 @@ function createWindow() {
 	setWindowsMap("main", mainWindow);
 
 	const createTray = (win, type = "login", isAdmin = false) => {
-		// 创建托盘图标
-		const tray = new Tray(join(__dirname, "../../src/assets/image/avatar.jpg"));
+		// 创建托盘图标，使用 resources 文件夹中的图标
+		const tray = new Tray(icon);
 
 		let menuTemplate = [
 			{
@@ -104,7 +111,7 @@ function createWindow() {
 		const contextMenu = Menu.buildFromTemplate(menuTemplate);
 
 		// 设置托盘图标提示文本
-		tray.setToolTip("聊天客户端");
+		tray.setToolTip("SwiftChat");
 		// 设置托盘菜单
 		tray.setContextMenu(contextMenu);
 
@@ -124,6 +131,7 @@ function createWindow() {
 	mainWindow.on("ready-to-show", () => {
 		// 显示窗口
 		mainWindow.show();
+		mainWindow.setTitle("SwiftChat");
 		// 打开开发者工具
 		// mainWindow.webContents.openDevTools();
 	});
@@ -267,4 +275,3 @@ app.on("window-all-closed", () => {
 
 // In this file you can include the rest of your app"s specific main process
 // code. You can also put them in separate files and require them here.
-

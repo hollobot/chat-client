@@ -9,7 +9,7 @@
 					placeholder="请选择文件保存路径"
 					readonly
 				></el-input>
-				<div class="path-desc">微信文件的默认保存位置</div>
+				<div class="path-desc">文件的默认保存位置</div>
 				<div class="btn-group">
 					<el-button @click="changePath">更改</el-button>
 					<el-button @click="openFolder">打开文件夹</el-button>

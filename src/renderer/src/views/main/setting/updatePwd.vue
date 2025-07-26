@@ -7,7 +7,7 @@
 			:rules="rules"
 			@validate="handleValidate"
 		>
-			<el-form-item label="微信号" style="opacity: 0.6">
+			<el-form-item label="账号" style="opacity: 0.6">
 				<el-input v-model="updatePwdModel.userId" disabled></el-input>
 			</el-form-item>
 			<el-form-item label="原密码" prop="oldPwd">

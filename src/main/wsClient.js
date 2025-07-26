@@ -42,151 +42,166 @@ const createWs = (token) => {
 	}
 	// 1、连接websocket
 	console.log("连接ws");
-	ws = new WebSocket(wsUrl + "?token=" + token);
+	console.log(wsUrl);
+	ws = new WebSocket(wsUrl + "?token=" + token, {
+		handshakeTimeout: 10000, // 10秒超时
+		perMessageDeflate: false // 禁用压缩
+	});
+
 	// 连接打开时触发
 	ws.onopen = function () {
 		console.log("WebSocket 连接已打开");
+		// 重置重连次数
+		maxReConnectCount = 5;
+		lockReConnect = false;
 		ws.send("Hello, Server!");
 	};
 
 	// 接收消息时触发回调函数
 	ws.onmessage = async function (event) {
-		console.log("接受消息：\n" + event.data);
-		const message = JSON.parse(event.data);
-		const messageType = message.messageType;
+		try {
+			console.log("接收消息：\n" + event.data);
+			const message = JSON.parse(event.data);
+			const messageType = message.messageType;
 
-		switch (messageType) {
-			// 初始化消息
-			case 0:
-				// 1、保存会话信息
-				await saveOrUpdateChatSessionBatchInit(
-					message.extendData.chatSessionUserList ?? []
-				);
-				// 2、保存信息
-				await saveMessageBatchInit(message.extendData.chatMessageList ?? []);
-				// 3、跟新联系人申请数量
-				await updateContactNoReadCount(
-					store.getUserId(),
-					message.extendData.applyUserCount,
-					1,
-					"contact_no_read"
-				);
-				await updateContactNoReadCount(
-					store.getUserId(),
-					message.extendData.applyGroupCount,
-					1,
-					"group_no_read"
-				);
-				// sender.send("reciveMessage", message);
-				break;
-
-			case 4: //好友申请
-				await updateContactNoReadCount(store.getUserId(), 1, 1, "contact_no_read");
-				sender.send("reciveMessage", message);
-				break;
-			case 14: //用户群聊申请
-				await updateContactNoReadCount(store.getUserId(), 1, 1, "group_no_read");
-				sender.send("reciveMessage", message);
-				break;
-			case 6: // 文件上传完成
-				await updateMessage({ status: 1 }, { uuid: message.uuid });
-				sender.send("reciveMessage", message);
-				break;
-			case 7: // 强制下线
-				sender.send("reciveMessage", message);
-				break;
-
-			case 1: //添加好友消息
-			case 2: // 文本消息
-			case 3: // 群组已经创建
-			case 5: // 媒体消息
-			case 8: //群聊解散
-			case 9: // 好友加入群组
-			case 10: // 群聊信息跟新
-			case 11: // 退出了群聊
-			case 12: // 被管理员移出了群聊
-			case 13: // 添加好友成功消息
-				message.userId = store.getUserId();
-				//群聊接收消息处理，如果是自己发送的不处理
-				if (
-					message.sendUserId == store.getUserId() &&
-					message.recipientType == 1 &&
-					(message.messageType == 2 || message.messageType == 5)
-				) {
+			switch (messageType) {
+				// 初始化消息
+				case 0:
+					// 1、保存会话信息
+					await saveOrUpdateChatSessionBatchInit(
+						message.extendData.chatSessionUserList ?? []
+					);
+					// 2、保存信息
+					await saveMessageBatchInit(message.extendData.chatMessageList ?? []);
+					// 3、跟新联系人申请数量
+					await updateContactNoReadCount(
+						store.getUserId(),
+						message.extendData.applyUserCount,
+						1,
+						"contact_no_read"
+					);
+					await updateContactNoReadCount(
+						store.getUserId(),
+						message.extendData.applyGroupCount,
+						1,
+						"group_no_read"
+					);
+					// sender.send("reciveMessage", message);
 					break;
-				}
-				const sessionInfo = {};
-				// 媒体消息
-				if (message.extendData && typeof message.extendData === "object") {
-					Object.assign(sessionInfo, message.extendData);
-				} else {
-					Object.assign(sessionInfo, message);
-					// 不是群聊需要跟新发送的用户名
-					if (message.recipientType == 0) {
-						sessionInfo.contactName = message.sendUserNickName;
+
+				case 4: //好友申请
+					await updateContactNoReadCount(store.getUserId(), 1, 1, "contact_no_read");
+					sender.send("reciveMessage", message);
+					break;
+				case 14: //用户群聊申请
+					await updateContactNoReadCount(store.getUserId(), 1, 1, "group_no_read");
+					sender.send("reciveMessage", message);
+					break;
+				case 6: // 文件上传完成
+					await updateMessage({ status: 1 }, { uuid: message.uuid });
+					sender.send("reciveMessage", message);
+					break;
+				case 7: // 强制下线
+					sender.send("reciveMessage", message);
+					break;
+
+				case 1: //添加好友消息
+				case 2: // 文本消息
+				case 3: // 群组已经创建
+				case 5: // 媒体消息
+				case 8: //群聊解散
+				case 9: // 好友加入群组
+				case 10: // 群聊信息跟新
+				case 11: // 退出了群聊
+				case 12: // 被管理员移出了群聊
+				case 13: // 添加好友成功消息
+					message.userId = store.getUserId();
+					//群聊接收消息处理，如果是自己发送的不处理
+					if (
+						message.sendUserId == store.getUserId() &&
+						message.recipientType == 1 &&
+						(message.messageType == 2 || message.messageType == 5)
+					) {
+						break;
 					}
-					sessionInfo.lastMessage = message.lastMessage;
-					sessionInfo.lastReceiveTime = message.sendTime;
-				}
+					const sessionInfo = {};
+					// 媒体消息
+					if (message.extendData && typeof message.extendData === "object") {
+						Object.assign(sessionInfo, message.extendData);
+					} else {
+						Object.assign(sessionInfo, message);
+						// 不是群聊需要跟新发送的用户名
+						if (message.recipientType == 0) {
+							sessionInfo.contactName = message.sendUserNickName;
+						}
+						sessionInfo.lastMessage = message.lastMessage;
+						sessionInfo.lastReceiveTime = message.sendTime;
+					}
 
-				// 退出加入群聊需要跟新群聊人数
-				if (messageType == 9 || messageType == 11 || messageType == 12) {
-					sessionInfo.memberCount = message.memberCount;
-				}
+					// 退出加入群聊需要跟新群聊人数
+					if (messageType == 9 || messageType == 11 || messageType == 12) {
+						sessionInfo.memberCount = message.memberCount;
+					}
 
-				// 群聊退出加入系列操作需要跟新status
-				if (messageType == 8) {
-					sessionInfo.status = 0;
-				} else if (
-					(messageType == 11 || messageType == 12) &&
-					message.sendUserId == store.getUserId()
-				) {
-					sessionInfo.status = 0;
-				} else if (messageType == 9 && message.sendUserId == store.getUserId()) {
-					sessionInfo.status = 1;
-				}
+					// 群聊退出加入系列操作需要跟新status
+					if (messageType == 8) {
+						sessionInfo.status = 0;
+					} else if (
+						(messageType == 11 || messageType == 12) &&
+						message.sendUserId == store.getUserId()
+					) {
+						sessionInfo.status = 0;
+					} else if (messageType == 9 && message.sendUserId == store.getUserId()) {
+						sessionInfo.status = 1;
+					}
 
-				let contactId = message.sendUserId;
+					let contactId = message.sendUserId;
 
-				if (
-					messageType == 1 &&
-					message.contactIdTemp &&
-					sessionInfo.sendUserId == sessionInfo.recipientId
-				) {
-					sessionInfo.sendUserId = message.contactIdTemp;
-					contactId = sessionInfo.sendUserId;
-				}
+					if (
+						messageType == 1 &&
+						message.contactIdTemp &&
+						sessionInfo.sendUserId == sessionInfo.recipientId
+					) {
+						sessionInfo.sendUserId = message.contactIdTemp;
+						contactId = sessionInfo.sendUserId;
+					}
 
-				// 修改本地会话信息
-				await saveSession(store.getUserData("currentChatSessionId"), sessionInfo);
-				// 写入本地消息
-				await saveMessage(message);
-				if (message.recipientType == 1) {
-					contactId = message.recipientId;
-				}
-				const session = await selectUserSessionByContactId(contactId);
-				if (
-					message.recipientType == 1 &&
-					(message.messageType == 2 || message.messageType == 5)
-				) {
-					session.lastMessage = message.sendUserNickName + ":" + session.lastMessage;
-				}
-				message.extendData = session;
-				// 发送渲染进程渲染界面
-				sender.send("reciveMessage", message);
-				break;
+					// 修改本地会话信息
+					await saveSession(store.getUserData("currentChatSessionId"), sessionInfo);
+					// 写入本地消息
+					await saveMessage(message);
+					if (message.recipientType == 1) {
+						contactId = message.recipientId;
+					}
+					const session = await selectUserSessionByContactId(contactId);
+					if (
+						message.recipientType == 1 &&
+						(message.messageType == 2 || message.messageType == 5)
+					) {
+						session.lastMessage = message.sendUserNickName + ":" + session.lastMessage;
+					}
+					message.extendData = session;
+					// 发送渲染进程渲染界面
+					sender.send("reciveMessage", message);
+					break;
+			}
+		} catch (error) {
+			console.error("消息处理错误:", error);
 		}
 	};
 
 	// 连接关闭时触发
-	ws.onclose = function () {
-		console.log("WebSocket 连接已关闭");
+	ws.onclose = function (event) {
+		console.log("WebSocket 连接已关闭，代码:", event.code, "原因:", event.reason);
 		reConnect();
 	};
 
 	// 错误处理
 	ws.onerror = function (error) {
-		console.log("WebSocket 错误:", error);
+		console.error("WebSocket 错误:", error);
+		if (error.error && error.error.code === 'ETIMEDOUT') {
+			console.log("连接超时，尝试重连...");
+		}
 		reConnect();
 	};
 

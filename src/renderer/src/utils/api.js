@@ -1,9 +1,16 @@
 import axios from "axios";
 import { ElMessage } from "element-plus";
 import router from "@/router"; // 确保路径正确
+import { api as apiConst } from "@/constant/api";
+const NODE_ENV = process.env.NODE_ENV;
 
 // 白名单
-const whiteList = ["/userContact/users/","/groupContact/groups/","/userApply/all/","/groupApply/all/"];
+const whiteList = [
+	"/userContact/users/",
+	"/groupContact/groups/",
+	"/userApply/all/",
+	"/groupApply/all/"
+];
 
 // 用于存储正在进行的请求
 const pendingRequests = new Map();
@@ -34,12 +41,13 @@ const removePendingRequest = (config) => {
 };
 
 const api = axios.create({
-	baseURL: "/api/api"
+	baseURL: NODE_ENV === "development" ? `/api/api` : apiConst.prodDomain + "/api"
 });
 
 // 添加请求拦截器
 api.interceptors.request.use(
 	function (config) {
+		console.log(NODE_ENV);
 		// 检查是否有相同的请求正在进行中
 		if (hasPendingRequest(config)) {
 			// 如果有相同的请求正在进行中，提示用户不要重复提交
@@ -133,3 +141,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+

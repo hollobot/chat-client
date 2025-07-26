@@ -21,9 +21,20 @@ const expressServer = express();
 const cover_image_suffix = "_cover.jpg";
 const image_suffix = ".jpg";
 
+// 获取资源文件路径（兼容开发和生产环境）
+function getAssetPath(filename) {
+	if (NODE_ENV === "development") {
+		return path.join("./src/assets/image/" + filename);
+	} else {
+		return path.join(process.resourcesPath,"app.asar.unpacked/resources/", filename);
+	}
+}
+
 // 获取域名主机地址
 const getDomain = () => {
-	return NODE_ENV == "devDomain" ? store.getData("devDomain") : store.getData("prodDomain");
+	return NODE_ENV === "development"
+		? `http://127.0.0.1:${store.getData("prot")}/api/api`
+		: `${store.getData("prodDomain")}/api`;
 };
 
 // 上传文件到服务器
@@ -34,7 +45,7 @@ const uploadFile = async (uuid, savePath, coverSavePath) => {
 	if (coverSavePath) {
 		formData.append("cover", fs.createReadStream(coverSavePath));
 	}
-	const url = `${getDomain()}/api/api/chat/upload`;
+	const url = `${getDomain()}/chat/upload`;
 	const token = store.getToken();
 	const config = {
 		headers: {
@@ -45,7 +56,7 @@ const uploadFile = async (uuid, savePath, coverSavePath) => {
 	await axios
 		.post(url, formData, config)
 		.then((response) => {
-			console.log("文件成功上传服务器"+response.data);
+			console.log("文件成功上传服务器" + response.data);
 		})
 		.catch((error) => {
 			console.log("文件上传失败：", error);
@@ -260,39 +271,45 @@ expressServer.get("/file", async (req, resp) => {
 // 从服务下载文件
 const downloadFile = (fileId, showCover, savePath, partType) => {
 	return new Promise(async (resolve, reject) => {
-		const formData = new FormData();
-		formData.append("fileId", fileId);
-		formData.append("showCover", showCover + "");
-		const url = `${getDomain()}/api/api/chat/download`;
-		const token = store.getToken();
-		const config = {
-			headers: {
-				"Content-Type": "multipart/form-data", // 设置请求头为 multipart/form-data
-				Authorization: token
-			},
-			responseType: "stream"
-		};
-		const response = await axios.post(url, formData, config);
-		const folder = savePath.substring(0, savePath.lastIndexOf("/"));
-		if (!fs.existsSync(folder)) {
-			mkdirs(folder);
-		}
-		// 文件流
-		const stream = fs.createWriteStream(savePath);
-
-		if (response.headers["content-type"] == "application/json") {
-			if (partType == "avatar") {
-				fs.createReadStream("./src/assets/image/defaultAvatar.jpg").pipe(stream);
-			} else {
-				fs.createReadStream("./src/assets/image/404.jpg").pipe(stream);
+		try {
+			const formData = new FormData();
+			formData.append("fileId", fileId);
+			formData.append("showCover", showCover + "");
+			const url = `${getDomain()}/chat/download`;
+			console.log("下载文件地址:", url);
+			const token = store.getToken();
+			const config = {
+				headers: {
+					"Content-Type": "multipart/form-data", // 设置请求头为 multipart/form-data
+					Authorization: token
+				},
+				responseType: "stream"
+			};
+			const response = await axios.post(url, formData, config);
+			const folder = savePath.substring(0, savePath.lastIndexOf("/"));
+			if (!fs.existsSync(folder)) {
+				mkdirs(folder);
 			}
-		} else {
-			response.data.pipe(stream);
+			// 文件流
+			const stream = fs.createWriteStream(savePath);
+
+			if (response.headers["content-type"] == "application/json") {
+				if (partType == "avatar") {
+					fs.createReadStream(getAssetPath("defaultAvatar.jpg")).pipe(stream);
+				} else {
+					fs.createReadStream(getAssetPath("404.jpg")).pipe(stream);
+				}
+			} else {
+				response.data.pipe(stream);
+			}
+			stream.on("finish", () => {
+				stream.close();
+				resolve();
+			});
+		} catch (error) {
+			console.error("下载失败:", error);
+			reject(error);
 		}
-		stream.on("finish", () => {
-			stream.close();
-			resolve();
-		});
 	});
 };
 
@@ -330,7 +347,8 @@ const saveTempFile = async (data) => {
 	// 存放临时文件
 	fs.writeFileSync(savePath, buffer);
 	// 返回临时文件的路径
-	return { messageContent, fileSize, savePath,fileName };
+	return { messageContent, fileSize, savePath, fileName };
 };
 
 export { saveFileToLocal, startLocalServer, stopLocalServer, saveFile, saveTempFile };
+

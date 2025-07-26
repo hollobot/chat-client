@@ -23,7 +23,7 @@
 					/>
 				</div>
 
-				<div class="text info">微信号：{{ userInfo.userId }}</div>
+				<div class="text info">账号：{{ userInfo.userId }}</div>
 				<div class="text info">地区：{{ userInfo.areaName }}</div>
 			</div>
 

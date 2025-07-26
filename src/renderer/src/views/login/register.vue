@@ -1,6 +1,6 @@
 <template>
 	<div class="root">
-		<div class="custom-titlebar">微信</div>
+		<div class="custom-titlebar">SwiftChat</div>
 		<div class="content">
 			<div class="avatar">
 				<el-avatar shape="square" :size="70" :src="avatarPath" />
@@ -88,7 +88,7 @@
 </template>
 
 <script setup>
-	import { ref, watch } from "vue";
+	import { ref, watch,onMounted  } from "vue";
 	import avatar from "@/assets/image/avatar/avatar.jpg";
 	const avatarPath = ref(avatar);
 	import { checkCode, register } from "@/api/userApi";
@@ -115,7 +115,7 @@
 				trigger: "blur"
 			}
 		],
-		checkCode: [{ validator: customCheck(ruleInfo.checkCode), trigger: "blur" }]
+		checkCode: [{ validator: customCheck(ruleInfo.checkCode), trigger: ["change", "blur"]  }]
 	});
 
 	/**
@@ -154,7 +154,6 @@
 		sessionStorage.setItem("codeKey", codeKey);
 		checkCodeBase64.value = codeBase64;
 	}
-	refreshCheckCode();
 
 	/**
 	 * 跳转注册
@@ -202,6 +201,12 @@
 		const errorRef = error.value;
 		errorRef.style.cssText = "opacity: 0;transform: translateY(-10px);";
 	};
+
+	
+	onMounted(() => {
+		// 获取验证码
+		refreshCheckCode();
+	});
 </script>
 
 <style lang="scss" scoped>

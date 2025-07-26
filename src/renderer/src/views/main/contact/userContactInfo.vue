@@ -31,7 +31,7 @@
 				<div class="text info benefits" :title="userContactInfo.nickName">
 					昵称：{{ userContactInfo.nickName }}
 				</div>
-				<div class="text info">微信号：{{ userContactInfo.userId }}</div>
+				<div class="text info">账号：{{ userContactInfo.userId }}</div>
 				<div class="text info">地区：{{ userContactInfo.areaName }}</div>
 			</div>
 
