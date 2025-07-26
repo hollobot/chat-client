@@ -2,6 +2,10 @@
 
 <div align="center">   <h3>🚀 基于 Electron + Vue 的桌面聊天应用</h3>   <p>一个现代化的跨平台桌面聊天客户端，仅供学习交流使用</p>
 
+![License](https://img.shields.io/badge/license-Non--Commercial-red.svg) ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg) ![Vue](https://img.shields.io/badge/Vue-3.x-4FC08D.svg) ![Electron](https://img.shields.io/badge/Electron-Latest-47848F.svg)
+
+</div>
+
 ## ✨ 特性
 
 - 🖥️ **跨平台支持** - 支持 Windows、macOS 和 Linux
