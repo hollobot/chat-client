@@ -1,86 +1,71 @@
 <template>
-	<template v-if="!showResizeOverlay">
-		<div class="main">
-			<div class="aside">
-				<div class="avatar">
-					<el-popover
-						ref="visible"
-						:show-arrow="false"
-						:hide-after="0"
-						:width="320"
-						trigger="click"
-					>
-						<template #reference>
-							<div class="avatar-image">
-								<ShowLocalImage
-									:width="35"
-									:height="35"
-									:file-id="userInfo.userId"
-									part-type="avatar"
-									:file-type="0"
-									:force-get="avatarUpdateStore.get(userInfo.userId)"
-								></ShowLocalImage>
-							</div>
-						</template>
-						<div @click="hidePopover">
-							<contactInfoCard
-								:contactInfo="myInfo"
-								:is-show="true"
-							></contactInfoCard>
+	<div class="main">
+		<div class="aside">
+			<div class="avatar">
+				<el-popover
+					ref="visible"
+					:show-arrow="false"
+					:hide-after="0"
+					:width="320"
+					trigger="click"
+				>
+					<template #reference>
+						<div class="avatar-image">
+							<ShowLocalImage
+								:width="35"
+								:height="35"
+								:file-id="userInfo.userId"
+								part-type="avatar"
+								:file-type="0"
+								:force-get="avatarUpdateStore.get(userInfo.userId)"
+							></ShowLocalImage>
 						</div>
-					</el-popover>
-				</div>
-				<div class="aside-top">
-					<div
-						v-for="item in topMenuList"
-						:class="[
-							'menu iconfont',
-							item.class,
-							route.path.includes(item.path) ? 'is-click' : ''
-						]"
-						:title="item.title"
-						@click="isClick(item)"
-					>
-						<Badge v-if="item.title == '聊天'" :count="messageCount.chatCount"></Badge>
-
-						<Badge v-else-if="item.title == '通讯录'" :count="contactNoReadSum"></Badge>
+					</template>
+					<div @click="hidePopover">
+						<contactInfoCard :contactInfo="myInfo" :is-show="true"></contactInfoCard>
 					</div>
-				</div>
-				<div class="aside-bottom">
-					<div
-						v-for="item in bottomMenuList"
-						:class="[
-							'menu iconfont',
-							item.class,
-							route.path.includes(item.path) ? 'is-click' : ''
-						]"
-						:title="item.title"
-						@click="isClick(item)"
-					></div>
+				</el-popover>
+			</div>
+			<div class="aside-top">
+				<div
+					v-for="item in topMenuList"
+					:class="[
+						'menu iconfont',
+						item.class,
+						route.path.includes(item.path) ? 'is-click' : ''
+					]"
+					:title="item.title"
+					@click="isClick(item)"
+				>
+					<Badge v-if="item.title == '聊天'" :count="messageCount.chatCount"></Badge>
+
+					<Badge v-else-if="item.title == '通讯录'" :count="contactNoReadSum"></Badge>
 				</div>
 			</div>
-			<div class="content">
-				<router-view />
+			<div class="aside-bottom">
+				<div
+					v-for="item in bottomMenuList"
+					:class="[
+						'menu iconfont',
+						item.class,
+						route.path.includes(item.path) ? 'is-click' : ''
+					]"
+					:title="item.title"
+					@click="isClick(item)"
+				></div>
 			</div>
 		</div>
-	</template>
-	<template v-if="showResizeOverlay">
-		<transition name="fade">
-			<div class="resize-overlay">
-				<div class="pulse-loader">
-					<div class="pulse-container">
-						<div class="pulse-bubble pulse-bubble-1"></div>
-						<div class="pulse-bubble pulse-bubble-2"></div>
-						<div class="pulse-bubble pulse-bubble-3"></div>
-					</div>
-				</div>
-			</div>
-		</transition>
-	</template>
+		<div class="content">
+			<router-view />
+		</div>
+	</div>
+	<!-- 自定义 Loading 组件 -->
+	<LoadingOverlay :visible="isLoading" :text="loadingText" />
 </template>
 
 <script setup>
 	import { ref, onMounted, nextTick, computed } from "vue";
+	import LoadingOverlay from "@/components/LoadingOverlay.vue";
 	import ShowLocalImage from "@/components/showLocalImage.vue";
 	import contactInfoCard from "@/components/contactInfoCard.vue";
 	import { RouterView } from "vue-router";
@@ -104,9 +89,11 @@
 	const messageCountStore = useMessageCountStore();
 	const { messageCount } = storeToRefs(messageCountStore);
 	import Badge from "@/components/badge.vue";
-	const showResizeOverlay = ref(false);
 	import { useContactStore } from "@/stores/contactStore";
 	const contactStore = useContactStore();
+
+	const isLoading = ref(true);
+	const loadingText = ref("加载中。。。");
 
 	const myInfo = ref();
 
@@ -236,12 +223,12 @@
 		delCurrentSession();
 		remover();
 		userInfoStore.setUserInfo(getLocalItem("userInfo"));
-		// 显示加载遮罩
-		showResizeOverlay.value = true;
+
 		// 使用 setTimeout 延迟路由跳转，给遮罩动画和数据处理留出时间
 		setTimeout(() => {
-			showResizeOverlay.value = false;
+			isLoading.value = false;
 		}, 1000);
+
 		nextTick(() => {
 			myInfo.value = {
 				type: "USER", //联系人类型
@@ -273,6 +260,7 @@
 		height: 100vh;
 		display: flex;
 		overflow: hidden; //不允许出现滑动条
+		user-select: none;
 
 		.aside {
 			width: 50px;
@@ -337,80 +325,5 @@
 			width: calc(100vw - 50px);
 			height: 100%;
 		}
-	}
-
-	/* 窗口尺寸变化遮罩层样式 */
-	.resize-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: rgba(255, 255, 255, 0.95);
-		z-index: 9999;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
-
-	.pulse-loader {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.pulse-container {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		margin-bottom: 15px;
-	}
-
-	.pulse-bubble {
-		width: 20px;
-		height: 20px;
-		border-radius: 50%;
-		margin: 0 3px;
-		background-color: #07c160;
-	}
-
-	.pulse-bubble-1 {
-		animation: pulse 0.6s ease 0s infinite alternate;
-	}
-
-	.pulse-bubble-2 {
-		animation: pulse 0.6s ease 0.15s infinite alternate;
-	}
-
-	.pulse-bubble-3 {
-		animation: pulse 0.6s ease 0.3s infinite alternate;
-	}
-
-	@keyframes pulse {
-		from {
-			opacity: 1;
-			transform: scale(1);
-		}
-		to {
-			opacity: 0.2;
-			transform: scale(0.8);
-		}
-	}
-
-	.loading-text {
-		color: #07c160;
-		font-size: 16px;
-		margin-top: 10px;
-	}
-
-	/* 淡入淡出动画 */
-	.fade-enter-active,
-	.fade-leave-active {
-		transition: opacity 0.3s ease;
-	}
-
-	.fade-enter-from,
-	.fade-leave-to {
-		opacity: 0;
 	}
 </style>

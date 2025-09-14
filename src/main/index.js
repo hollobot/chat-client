@@ -31,7 +31,8 @@ import {
 	onGetAvatar,
 	onGetEmailHistory,
 	onGetAppVersion,
-	OnOpenUpdateUrl
+	onOpenUpdateUrl,
+	setupIpcHandlers,
 } from "./ipc";
 import { setWindowsMap } from "./windowProxy";
 
@@ -145,6 +146,7 @@ function createWindow() {
 	 * 进入main界面
 	 */
 	winToMain((userInfo) => {
+		// 设置大小
 		windowInit(mainWindow);
 		// 创建新的托盘
 		if (mainWindow.tray) {
@@ -230,7 +232,9 @@ function createWindow() {
 	onGetAvatar();
 	onGetEmailHistory();
 	onGetAppVersion();
-	OnOpenUpdateUrl();
+	onOpenUpdateUrl();
+	setupIpcHandlers();
+	setupIpcHandlers();
 
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.

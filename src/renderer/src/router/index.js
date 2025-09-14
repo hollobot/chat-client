@@ -1,7 +1,4 @@
-import {
-	createRouter,
-	createWebHashHistory,
-} from "vue-router";
+import { createRouter, createWebHashHistory } from "vue-router";
 
 const routes = [
 	{ path: "/", redirect: "/login" },
@@ -138,6 +135,11 @@ const routes = [
 				component: () => import("@/views/admin/versionManageList.vue")
 			}
 		]
+	},
+	{
+		path: "/videoChat",
+		name: "videoChat",
+		component: () => import("@/views/videoChat/videoChat.vue")
 	}
 ];
 
@@ -148,3 +150,4 @@ const router = createRouter({
 });
 
 export default router;
+

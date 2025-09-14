@@ -24,6 +24,7 @@
 						@focus="selected"
 						@blur="getAvatar(userInfoForm.email)"
 						@select="handleSelect"
+						@keyup.enter="submit"
 					>
 						<template #prefix>
 							<span class="iconfont icon-email"></span>
@@ -38,6 +39,7 @@
 						placeholder="请输入密码"
 						@focus="selected"
 						show-password
+						@keyup.enter="submit"
 					>
 						<template #prefix>
 							<span class="iconfont icon-24gl-lock2"></span>
@@ -46,7 +48,11 @@
 				</el-form-item>
 
 				<el-form-item prop="checkCode" class="no-status-icon">
-					<el-input v-model="userInfoForm.checkCode" placeholder="输入验证码">
+					<el-input
+						v-model="userInfoForm.checkCode"
+						placeholder="输入验证码"
+						@keyup.enter="submit"
+					>
 						<template #prefix>
 							<span class="iconfont icon-anquan"></span>
 						</template>
@@ -76,11 +82,14 @@
 	</div>
 	<div ref="error" class="custom-error-message"></div>
 	<windowControlButton :win-config="windowControl"></windowControlButton>
+	<!-- 自定义 Loading 组件 -->
+	<LoadingOverlay :visible="isLoading" :text="loadingText" />
 </template>
 
 <script setup>
 	import { onMounted, ref, watch } from "vue";
 	import avatar from "@/assets/image/avatar/avatar.jpg";
+	import LoadingOverlay from "@/components/LoadingOverlay.vue";
 	const avatarPath = ref(avatar);
 	import { checkCode, login } from "@/api/userApi";
 	import { useRouter } from "vue-router";
@@ -91,6 +100,10 @@
 	import windowControlButton from "@/components/windowControlButton.vue";
 	import { setLocalItem } from "@/utils/storage";
 	import { api } from "@/constant/api";
+
+	const isLoading = ref(false);
+
+	const loadingText = ref("登录中。。。");
 
 	/**
 	 * 窗口右上角控制按钮
@@ -216,6 +229,10 @@
 	 * 登录
 	 */
 	const submit = async () => {
+		if (flag.value) {
+			return;
+		}
+
 		userInfoForm.value.codeKey = sessionStorage.getItem("codeKey");
 		const data = await login(userInfoForm.value);
 
@@ -224,15 +241,28 @@
 			return;
 		}
 
-		// 2、存入token
-		localStorage.setItem("token", data.data.token);
-		// 3、保存用户登录基础信息
-		userInfoStore.setUserInfo(data.data);
-		setLocalItem("userInfo", data.data);
-		// 4、登录成功跳转
-		router.push("/main");
-		window.ipcRenderer.send("toMain", data.data);
-		init();
+		// 开启遮罩
+		isLoading.value = true;
+
+		try {
+			// 3、存入token
+			localStorage.setItem("token", data.data.token);
+			// 4、保存用户登录基础信息
+			userInfoStore.setUserInfo(data.data);
+			setLocalItem("userInfo", data.data);
+
+			// 5、发送给主进程创建main窗口
+			window.ipcRenderer.send("toMain", data.data);
+
+			// 6、初始数据给主进程
+			init();
+
+			// 登录成功跳转（组件销毁）
+			router.push("/main");
+		} catch (e) {
+			log.error("登录失败", e);
+		} finally {
+		}
 	};
 
 	const init = () => {

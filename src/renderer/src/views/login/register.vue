@@ -20,6 +20,7 @@
 						class="el-input"
 						placeholder="请输入邮箱"
 						@focus="selected"
+						@keyup.enter="submit"
 					>
 						<template #prefix>
 							<span class="iconfont icon-email"></span>
@@ -34,6 +35,7 @@
 						placeholder="请输入密码"
 						@focus="selected"
 						show-password
+						@keyup.enter="submit"
 					>
 						<template #prefix>
 							<span class="iconfont icon-24gl-lock2"></span>
@@ -46,6 +48,7 @@
 						type="password"
 						placeholder="确认输入密码"
 						show-password
+						@keyup.enter="submit"
 					>
 						<template #prefix>
 							<span class="iconfont icon-24gl-lock2"></span>
@@ -54,7 +57,7 @@
 				</el-form-item>
 
 				<el-form-item prop="checkCode" class="no-status-icon">
-					<el-input v-model="userInfoForm.checkCode" placeholder="输入验证码">
+					<el-input v-model="userInfoForm.checkCode" placeholder="输入验证码" @keyup.enter="submit">
 						<template #prefix>
 							<span class="iconfont icon-anquan"></span>
 						</template>
@@ -95,6 +98,7 @@
 	import { useRouter } from "vue-router";
 	const router = useRouter();
 	import { ruleInfo, customCheck, ConfirmPassword, isSubmit } from "@/utils/checkUtils";
+	import { ElMessage } from "element-plus";
 
 	const formRef = ref();
 	const userInfoForm = ref({
@@ -166,6 +170,9 @@
 	 * 注册
 	 */
 	const submit = async () => {
+		if(flag.value){
+			return;
+		}
 		userInfoForm.value.codeKey = sessionStorage.getItem("codeKey");
 		const data = await register(userInfoForm.value);
 		//1、判断状态码

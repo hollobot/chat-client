@@ -1,5 +1,7 @@
 import WebSocket from "ws";
 import store from "./store";
+import { getWindowsMap } from "./windowProxy";
+import { openWindow } from "./ipc";
 import {
 	saveOrUpdateChatSessionBatchInit,
 	saveSession,
@@ -27,6 +29,9 @@ let sender = null;
 let needReconnect = null;
 let heartbeatInterval = null; // 用来保存发送心跳定时器ID
 
+// 连接状态 默认未连接
+const connectionStatus = "disconnected";
+
 export const initWs = (userInfo, _sender) => {
 	wsUrl =
 		NODE_ENV === "development" ? store.getData("devWsDomain") : store.getData("prodWsDomain");
@@ -43,6 +48,7 @@ const createWs = (token) => {
 	// 1、连接websocket
 	console.log("连接ws");
 	console.log(wsUrl);
+	updateConnectionStatus("connecting");
 	ws = new WebSocket(wsUrl + "?token=" + token, {
 		handshakeTimeout: 10000, // 10秒超时
 		perMessageDeflate: false // 禁用压缩
@@ -55,6 +61,8 @@ const createWs = (token) => {
 		maxReConnectCount = 5;
 		lockReConnect = false;
 		ws.send("Hello, Server!");
+		// 跟新状态，并反馈给渲染进程
+		updateConnectionStatus("connected");
 	};
 
 	// 接收消息时触发回调函数
@@ -184,6 +192,28 @@ const createWs = (token) => {
 					// 发送渲染进程渲染界面
 					sender.send("reciveMessage", message);
 					break;
+
+				case 15: // 视频通话
+					const windowKey = `${message.sendUserId}-${message.receiveUserId}`;
+					let videoChatWindow = getWindowsMap("videoChat");
+
+					if (!videoChatWindow) {
+						// 创建窗口
+						await videoChat(message.receiveUserId, message.sendUserId);
+						videoChatWindow = getWindowsMap("videoChat");
+						// 阻塞等待窗口初始化完成
+						await new Promise((resolve) => {
+							// 方式1: 等待DOM加载完成
+							setTimeout(resolve, 2000);
+						});
+
+						videoChatWindow.webContents.send("webrtc:signal-message", message);
+
+					} else {
+						// 直接发送消息
+						videoChatWindow.webContents.send("webrtc:signal-message", message);
+					}
+					break;
 			}
 		} catch (error) {
 			console.error("消息处理错误:", error);
@@ -193,15 +223,17 @@ const createWs = (token) => {
 	// 连接关闭时触发
 	ws.onclose = function (event) {
 		console.log("WebSocket 连接已关闭，代码:", event.code, "原因:", event.reason);
+		updateConnectionStatus("connecting");
 		reConnect();
 	};
 
 	// 错误处理
 	ws.onerror = function (error) {
 		console.error("WebSocket 错误:", error);
-		if (error.error && error.error.code === 'ETIMEDOUT') {
+		if (error.error && error.error.code === "ETIMEDOUT") {
 			console.log("连接超时，尝试重连...");
 		}
+		updateConnectionStatus("connecting");
 		reConnect();
 	};
 
@@ -213,6 +245,8 @@ const createWs = (token) => {
 			if (ws != null && ws.readyState == 1) {
 				console.log("发送心跳");
 				ws.send("heart beat");
+				// 反馈给渲染进程心跳
+				updateConnectionStatus("connected");
 			}
 		}, 5000);
 	}
@@ -238,6 +272,8 @@ const reConnect = () => {
 		}, 5000);
 	} else {
 		console.log("连接超时");
+		// 跟新状态，并反馈给渲染进程
+		updateConnectionStatus("disconnected");
 	}
 };
 
@@ -253,8 +289,56 @@ export const stopHeartbeat = () => {
 		needReconnect = false;
 	}
 	ws.close();
+	// 跟新状态，并反馈给渲染进程
+	updateConnectionStatus("disconnected");
 };
 
 export const closeWs = () => {
 	stopHeartbeat();
 };
+
+/**
+ * 发送信令消息到服务器
+ * @param {Object} message - 信令消息对象
+ */
+export const sendSignalMessage = (message) => {
+	if (!ws || ws.readyState !== WebSocket.OPEN) {
+		sender.send("webrtc:connection-error", "WebSocket not connected");
+		return false;
+	}
+
+	try {
+		const messageString = JSON.stringify(message);
+		// 发送信令消息到服务器
+		ws.send(messageString);
+		console.log(`Signal message sent: ${message.signalType}`);
+		return true;
+	} catch (error) {
+		sender.send("webrtc:connection-error", "Failed to send signal message");
+		return false;
+	}
+};
+
+/**
+ * 更新连接状态并通知渲染进程
+ * @param {string} status - 连接状态
+ */
+const updateConnectionStatus = (status) => {
+	connectionStatus = status;
+	const videoChatWindow = getWindowsMap("videoChat");
+	if (videoChatWindow) {
+		videoChatWindow.webContents.send("webrtc:connection-status", status);
+	}
+};
+
+// 打开视频聊天窗口
+const videoChat = async (useId, recipient) => {
+	const param = {
+		windowId: "videoChat",
+		title: "视频通话",
+		path: "/videoChat",
+		data: { useId, recipient }
+	};
+	await openWindow(param);
+};
+

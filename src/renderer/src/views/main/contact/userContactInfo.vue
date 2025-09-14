@@ -102,7 +102,7 @@
 				<span class="iconfont icon-dianhua3"></span>
 				<span class="text">语言聊天</span>
 			</div>
-			<div class="icon">
+			<div class="icon" @click="videoChat">
 				<span class="iconfont icon-video"></span>
 				<span class="text">视频聊天</span>
 			</div>
@@ -234,6 +234,25 @@
 			console.error("操作失败:", error);
 		}
 	};
+
+
+	/**
+	 * 视频聊天
+	 */
+	const videoChat = () =>{
+		const params = {
+			useId:userInfo.value.userId,
+			recipient:userContactInfo.value.userId
+		}
+
+		// TODO 发送添加视频窗口到主进程
+		window.ipcRenderer.send("newWindow", {
+			windowId: "videoChat",
+			title: "视频通话",
+			path: "/videoChat",
+			data: params
+		});
+	}
 </script>
 
 <style lang="scss">
@@ -375,6 +394,7 @@
 				justify-content: center;
 				color: #576b95;
 				gap: 5px;
+				cursor: pointer;
 				.iconfont {
 					font-weight: 200;
 					font-size: 20px;

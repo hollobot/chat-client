@@ -34,24 +34,12 @@
 	const props = defineProps({
 		winConfig: {
 			type: Object,
-			default: {
-				isShowPin: {
-					type: Boolean,
-					default: true
-				},
-				isShowMinimize: {
-					type: Boolean,
-					default: true
-				},
-				isShowMaximize: {
-					type: Boolean,
-					default: true
-				},
-				closeType: {
-					type: Number,
-					default: 1 //0:退掉进程 1：托盘
-				}
-			}
+			default: () => ({
+			isShowPin: true,
+			isShowMinimize: true,
+			isShowMaximize: true,
+			closeType: 1 // 0:退掉进程 1:托盘
+			})
 		}
 	});
 
@@ -79,7 +67,7 @@
 	};
 
 	const closeWindow = () => {
-		controlClick("close", props.winConfig.closeType.default);
+		controlClick("close", props.winConfig.closeType);
 		emit("closeCallback");
 	};
 

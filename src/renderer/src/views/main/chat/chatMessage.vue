@@ -244,6 +244,7 @@
 		// 文字消息样式
 		&.content-text {
 			align-items: flex-start;
+			user-select: text !important;
 		}
 
 		// 媒体消息样式（图片/视频等）
@@ -285,3 +286,4 @@
 		margin-left: 10px;
 	}
 </style>
+

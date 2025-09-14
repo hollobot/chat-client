@@ -3,7 +3,7 @@ import fs from "fs-extra";
 const pkg = require("../../package.json");
 import { is } from "@electron-toolkit/utils";
 import store from "./store";
-import { initWs } from "./wsClient";
+import { initWs, sendSignalMessage, startSignalServer } from "./wsClient";
 const path = require("path");
 import {
 	addUserSetting,
@@ -23,7 +23,7 @@ import {
 	saveMessage,
 	updateMessage
 } from "./database/service/chatMessageService";
-import { stopHeartbeat, closeWs } from "./wsClient";
+import { stopHeartbeat, closeWs, getWs } from "./wsClient";
 import {
 	selectUserSessionList,
 	delUserSession,
@@ -149,7 +149,14 @@ export const onNewWindow = () => {
 	});
 };
 
-export const openWindow = ({ windowId, title = "chat", path, width = 800, height = 560, data }) => {
+export const openWindow = async ({
+	windowId,
+	title = "chat",
+	path,
+	width = 800,
+	height = 560,
+	data
+}) => {
 	console.log("打开窗口: " + JSON.stringify(windowsMap));
 	let newWindow = getWindowsMap(windowId);
 	// 没有窗口创建窗口
@@ -160,7 +167,7 @@ export const openWindow = ({ windowId, title = "chat", path, width = 800, height
 			resizable: true, // 禁止用户调整窗口大小
 			center: true, // 窗口居中
 			title: title,
-			show: false, //窗口会立即显示，而不等内容加载完成
+			show: false, // 初始隐藏
 			// frame: false, // 隐藏默认窗口边框，启用自定义标题栏
 			autoHideMenuBar: true, // 是否隐藏菜单栏
 			titleBarStyle: "hidden",
@@ -189,11 +196,14 @@ export const openWindow = ({ windowId, title = "chat", path, width = 800, height
 			// newWindow.webContents.openDevTools();
 		}
 
+		// 监听 页面内容加载完成后触发
 		newWindow.on("ready-to-show", () => {
 			newWindow.setTitle(title);
 			// 显示窗口
 			newWindow.show();
 		});
+
+		// 监听显示
 		newWindow.once("show", () => {
 			setTimeout(() => {
 				// 发送给渲染进程
@@ -211,6 +221,15 @@ export const openWindow = ({ windowId, title = "chat", path, width = 800, height
 		// 发送给渲染进程
 		newWindow.webContents.send("pageInitData", data);
 	} else if (windowId === "admin") {
+		// 显示窗口
+		newWindow.show();
+		// 恢复最小化状态
+		if (newWindow.isMinimized()) {
+			newWindow.restore();
+		}
+		// 聚焦窗口
+		newWindow.focus();
+	} else if (windowId === "videoChat") {
 		// 显示窗口
 		newWindow.show();
 		// 恢复最小化状态
@@ -403,9 +422,9 @@ export const onGetAppVersion = () => {
 };
 
 // 打开浏览器
-export const OnOpenUpdateUrl = () => {
+export const onOpenUpdateUrl = () => {
 	ipcMain.handle("openUpdateUrl", async (event, url) => {
-		console.log(url)
+		console.log(url);
 		try {
 			// 打开浏览器地址
 			await shell.openExternal(url);
@@ -414,5 +433,15 @@ export const OnOpenUpdateUrl = () => {
 			console.error("Failed to open URL:", error);
 			return { success: false, error: error.message };
 		}
+	});
+};
+
+/**
+ * 设置 IPC 事件处理器
+ */
+export const setupIpcHandlers = () => {
+	// 处理发送信令消息请求
+	ipcMain.on("webrtc:send-signal", (event, message) => {
+		sendSignalMessage(message);
 	});
 };
