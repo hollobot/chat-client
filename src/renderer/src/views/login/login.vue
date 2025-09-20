@@ -61,7 +61,11 @@
 								style="width: 100px; height: 40px; cursor: pointer"
 								:src="checkCodeBase64"
 								@click="refreshCheckCode"
-							/>
+							>
+								<template #error>
+									<div class="errorCode">加载失败</div>
+								</template>
+							</el-image>
 						</template>
 					</el-input>
 				</el-form-item>
@@ -100,6 +104,7 @@
 	import windowControlButton from "@/components/windowControlButton.vue";
 	import { setLocalItem } from "@/utils/storage";
 	import { api } from "@/constant/api";
+	import codeError from "@/assets/image/icon/codeError.svg";
 
 	const isLoading = ref(false);
 
@@ -337,6 +342,16 @@
 						不同于 visibility: hidden;，后者会让元素不可见，但仍然占用空间。
 						 */
 						display: none;
+					}
+
+					.errorCode {
+						width: 100px;
+						height: 40px;
+						display: flex;
+						justify-content: center;
+						align-items: center;
+						background-color: #F5F7FA;
+						font-size: 12px;
 					}
 				}
 

@@ -160,6 +160,12 @@
 	import { useMessageCountStore } from "@/stores/messageCountStore";
 	const messageCountStore = useMessageCountStore();
 
+	// 哪些消息需要铃声提示
+	const audioMsgType = [1, 2, 4, 5, 7, 8, 9, 10, 11, 12, 14];
+
+	import msgAudio from "@/assets/media/消息铃声.mp3";
+	let audio = new Audio(msgAudio);
+
 	// 消息滑动窗口
 	const scrollbarRef = ref();
 	// 会话列表
@@ -413,6 +419,10 @@
 	const groupInfoInfo = ref(true);
 	const onReciveMessage = () => {
 		window.ipcRenderer.on("reciveMessage", async (e, message) => {
+			// 响铃
+			if (audioMsgType.includes(message.messageType)) {
+				playRing();
+			}
 
 			// 好友申请
 			if (message.messageType == 4) {
@@ -532,6 +542,13 @@
 		});
 	};
 
+	const playRing = () => {
+		audio.currentTime = 0; // 每次从头播放
+		audio.play().catch((err) => {
+			console.log("播放失败：", err);
+		});
+	};
+	
 	// 发送消息更新自己的消息聊表、会话
 	const sendMessageLocalHandler = (messageObj) => {
 		messageList.value.push(messageObj);

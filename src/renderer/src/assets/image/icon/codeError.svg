@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" 
+     width="16" height="16" viewBox="0 0 24 24" 
+     fill="none" stroke="currentColor" stroke-width="2" 
+     stroke-linecap="round" stroke-linejoin="round">
+  <!-- 外层圆圈 -->
+  <circle cx="12" cy="12" r="10" stroke="#999"/>
+  <!-- 中间感叹号 -->
+  <line x1="12" y1="8" x2="12" y2="13" stroke="#f56c6c"/>
+  <circle cx="12" cy="16" r="1" fill="#f56c6c"/>
+  <!-- 斜线 (加载失败感) -->
+  <line x1="6" y1="18" x2="18" y2="6" stroke="#999" stroke-dasharray="4"/>
+</svg>

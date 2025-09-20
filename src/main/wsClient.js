@@ -192,9 +192,7 @@ const createWs = (token) => {
 					// 发送渲染进程渲染界面
 					sender.send("reciveMessage", message);
 					break;
-
 				case 15: // 视频通话
-					const windowKey = `${message.sendUserId}-${message.receiveUserId}`;
 					let videoChatWindow = getWindowsMap("videoChat");
 
 					if (!videoChatWindow) {
@@ -208,7 +206,6 @@ const createWs = (token) => {
 						});
 
 						videoChatWindow.webContents.send("webrtc:signal-message", message);
-
 					} else {
 						// 直接发送消息
 						videoChatWindow.webContents.send("webrtc:signal-message", message);
@@ -341,4 +338,5 @@ const videoChat = async (useId, recipient) => {
 	};
 	await openWindow(param);
 };
+
 

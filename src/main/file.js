@@ -222,14 +222,6 @@ expressServer.get("/file", async (req, resp) => {
 	showCover = showCover == "true" ? true : false;
 	let localPath = await getLocalStore(partType, showCover, fileId);
 	if (!fs.existsSync(localPath) || forceGet == "true") {
-		// if (forceGet == "true" && partType == "avatar") {
-		// 	await downloadFile(
-		// 		fileId,
-		// 		true,
-		// 		localPath.substring(0, localPath.lastIndexOf(".")) + cover_image_suffix,
-		// 		partType
-		// 	);
-		// }
 		await downloadFile(fileId, showCover, localPath, partType);
 	}
 	const fileSuffix = localPath.substring(localPath.lastIndexOf(".") + 1);

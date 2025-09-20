@@ -57,17 +57,25 @@
 				</el-form-item>
 
 				<el-form-item prop="checkCode" class="no-status-icon">
-					<el-input v-model="userInfoForm.checkCode" placeholder="输入验证码" @keyup.enter="submit">
+					<el-input
+						v-model="userInfoForm.checkCode"
+						placeholder="输入验证码"
+						@keyup.enter="submit"
+					>
 						<template #prefix>
 							<span class="iconfont icon-anquan"></span>
 						</template>
 						<template #suffix>
-							<span @click="refreshCheckCode">
+							<span class="codeBox" @click="refreshCheckCode">
 								<el-image
 									style="width: 100px; height: 40px; cursor: pointer"
 									alt="验证码"
 									:src="checkCodeBase64"
-								/>
+								>
+									<template #error>
+										<div class="errorCode">加载失败</div>
+									</template>
+								</el-image>
 							</span>
 						</template>
 					</el-input>
@@ -91,7 +99,7 @@
 </template>
 
 <script setup>
-	import { ref, watch,onMounted  } from "vue";
+	import { ref, watch, onMounted } from "vue";
 	import avatar from "@/assets/image/avatar/avatar.jpg";
 	const avatarPath = ref(avatar);
 	import { checkCode, register } from "@/api/userApi";
@@ -119,7 +127,7 @@
 				trigger: "blur"
 			}
 		],
-		checkCode: [{ validator: customCheck(ruleInfo.checkCode), trigger: ["change", "blur"]  }]
+		checkCode: [{ validator: customCheck(ruleInfo.checkCode), trigger: ["change", "blur"] }]
 	});
 
 	/**
@@ -145,7 +153,7 @@
 		(newValue) => {
 			flag.value = isSubmit(newValue);
 		},
-		{ deep: true , immediate: true }
+		{ deep: true, immediate: true }
 	);
 
 	/**
@@ -170,7 +178,7 @@
 	 * 注册
 	 */
 	const submit = async () => {
-		if(flag.value){
+		if (flag.value) {
 			return;
 		}
 		userInfoForm.value.codeKey = sessionStorage.getItem("codeKey");
@@ -209,7 +217,6 @@
 		errorRef.style.cssText = "opacity: 0;transform: translateY(-10px);";
 	};
 
-	
 	onMounted(() => {
 		// 获取验证码
 		refreshCheckCode();
@@ -265,6 +272,20 @@
 						 */
 						display: none;
 					}
+
+					.codeBox {
+						width: 100px;
+						height: 40px;
+						.errorCode {
+							width: 100%;
+							height: 100%;
+							display: flex;
+							justify-content: center;
+							align-items: center;
+							background-color: #f5f7fa;
+							font-size: 12px;
+						}
+					}
 				}
 
 				:deep(.el-form-item) {
@@ -307,4 +328,3 @@
 			transform 0.5s ease; /* 动画时间和过渡效果 */
 	}
 </style>
-
