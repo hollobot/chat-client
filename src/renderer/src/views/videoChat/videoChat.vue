@@ -83,7 +83,13 @@
 	// ICE服务器配置-用于NAT穿透
 	const ICE_SERVERS = [
 		{ urls: "stun:stun.l.google.com:19302" },
-		{ urls: "stun:stun1.l.google.com:19302" }
+		{ urls: "stun:stun1.l.google.com:19302" },
+		{
+			// 新增的TURN
+			urls: "turn:openrelay.metered.ca:80",
+			username: "openrelayproject",
+			credential: "openrelayproject"
+		}
 	];
 
 	// 计算连接状态属性
@@ -126,7 +132,14 @@
 		}
 
 		// 创建新的 P2P 连接
-		peer = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+		// 使用增强的配置创建P2P连接
+		peer = new RTCPeerConnection({
+			iceServers: ICE_SERVERS,
+			iceCandidatePoolSize: 10,
+			iceTransportPolicy: "all",
+			bundlePolicy: "max-bundle",
+			rtcpMuxPolicy: "require"
+		});
 
 		// 添加本地媒体流轨道到 P2P 连接
 		if (localStream) {
@@ -286,7 +299,7 @@
 			await notOnline();
 			setTimeout(() => {
 				isInCall.value = false;
-				if(!flog) flog = true;
+				if (!flog) flog = true;
 			}, 1000);
 			return;
 		}
