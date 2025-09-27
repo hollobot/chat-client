@@ -31,7 +31,8 @@ import {
 	updateUserSessionInfo,
 	readAll,
 	updateChatSeeion,
-	selectUserSession
+	selectUserSession,
+	updateSessionContentName
 } from "./database/service/chatUserSessionService";
 import { saveFile, saveFileToLocal, stopLocalServer } from "./file";
 import { delWindowsMap, getWindowsMap, setWindowsMap, windowsMap } from "./windowProxy";
@@ -443,5 +444,12 @@ export const setupIpcHandlers = () => {
 	// 处理发送信令消息请求
 	ipcMain.on("webrtc:send-signal", (event, message) => {
 		sendSignalMessage(message);
+	});
+};
+
+export const changeSessionContentName = () => {
+	ipcMain.on("updateSessionContentName", (event, data) => {
+		const { contactName, contactId } = data;
+		updateSessionContentName(contactName, contactId);
 	});
 };

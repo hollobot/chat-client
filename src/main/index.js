@@ -33,6 +33,7 @@ import {
 	onGetAppVersion,
 	onOpenUpdateUrl,
 	setupIpcHandlers,
+	changeSessionContentName
 } from "./ipc";
 import { setWindowsMap } from "./windowProxy";
 
@@ -235,7 +236,7 @@ function createWindow() {
 	onOpenUpdateUrl();
 	setupIpcHandlers();
 	setupIpcHandlers();
-
+	changeSessionContentName();
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.
 	if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {

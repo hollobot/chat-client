@@ -151,6 +151,13 @@ const readAll = async (contactId) => {
 	await run(sql, [store.getUserId(), contactId]);
 };
 
+/** 根据联系人id跟新联系人名称 （用户更改名称需要跟新为联系人身份的名称） */
+const updateSessionContentName = async (contactName,contactId) => {
+	const sql =
+		"update chat_session_user set contact_name = ? where contact_id = ?";
+	await run(sql, [contactName, contactId]);
+}
+
 export {
 	saveOrUpdateChatSessionBatchInit,
 	updateNoReadCount,
@@ -162,5 +169,6 @@ export {
 	saveSession,
 	selectUserSessionByContactId,
 	updateChatSeeion,
-	selectUserSession
+	selectUserSession,
+	updateSessionContentName
 };

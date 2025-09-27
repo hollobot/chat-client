@@ -1,18 +1,60 @@
 const fs = require("fs");
 const NODE_ENV = process.env.NODE_ENV;
 const path = require("path");
-const { app, ipcMain, shell, dialog } = require("electron");
+const { app, dialog } = require("electron");
 const FormData = require("form-data"); //引入FormData模块（用于构建表单数据）
 const axios = require("axios"); // 引|入axios库
 import store from "./store";
 const moment = require("moment");
 moment.locale("zh-cn", {});
 import { selectMessageInfo } from "./database/service/chatMessageService";
+const ffmpegStatic  = require("ffmpeg-static");
 const ffmpeg = require("fluent-ffmpeg");
-// const ffprobe = require("ffprobe-static");
-const ffmpegPath = require("ffmpeg-static");
-// ffmpeg.setFfprobePath(ffprobe.path);
-ffmpeg.setFfmpegPath(ffmpegPath);
+
+// 获取正确的 ffmpeg 路径
+function getFFmpegPath() {
+	if (app.isPackaged) {
+		// 打包后的路径 - ffmpeg-static 在 app.asar.unpacked 中
+		const unpackedPath = path.join(
+			process.resourcesPath,
+			"app.asar.unpacked",
+			"node_modules",
+			"ffmpeg-static"
+		);
+
+		// Windows 下的 ffmpeg.exe 路径
+		let ffmpegBinPath = path.join(unpackedPath, "ffmpeg.exe");
+
+		// 如果是 Linux/Mac
+		if (!fs.existsSync(ffmpegBinPath)) {
+			ffmpegBinPath = path.join(unpackedPath, "ffmpeg");
+		}
+
+		console.log("检查打包后的 FFmpeg 路径:", ffmpegBinPath);
+
+		if (fs.existsSync(ffmpegBinPath)) {
+			return ffmpegBinPath;
+		} else {
+			console.error("打包的 FFmpeg 文件不存在:", ffmpegBinPath);
+			// 尝试直接使用 ffmpeg-static 模块
+			try {
+				const staticPath = require.resolve("ffmpeg-static");
+				if (fs.existsSync(staticPath)) {
+					console.log("使用 require.resolve 找到的路径:", staticPath);
+					return staticPath;
+				}
+			} catch (resolveError) {
+				console.error("require.resolve 也失败了:", resolveError);
+			}
+
+			throw new Error("FFmpeg 二进制文件未找到");
+		}
+	} else {
+		// 开发环境
+		console.log("开发环境，使用 ffmpeg-static:", ffmpegStatic);
+		return ffmpegStatic;
+	}
+}
 
 // server 服务器
 const express = require("express");
@@ -26,7 +68,7 @@ function getAssetPath(filename) {
 	if (NODE_ENV === "development") {
 		return path.join("./src/assets/image/" + filename);
 	} else {
-		return path.join(process.resourcesPath,"app.asar.unpacked/resources/", filename);
+		return path.join(process.resourcesPath, "app.asar.unpacked/resources/", filename);
 	}
 }
 
@@ -56,9 +98,11 @@ const uploadFile = async (uuid, savePath, coverSavePath) => {
 	await axios
 		.post(url, formData, config)
 		.then((response) => {
+			console.log("上传文件地址:", url);
 			console.log("文件成功上传服务器" + response.data);
 		})
 		.catch((error) => {
+			console.log("上传文件地址:", url);
 			console.log("文件上传失败：", error);
 		});
 };
@@ -127,22 +171,7 @@ const mkdirs = (dir) => {
 };
 
 /**
- * 获取文件类型
- * @videoPath 文件路径
- * @returns 返回视频文件格式codec_name
- */
-/* function getVideoCodec(videoPath) {
-	return new Promise((resolve, reject) => {
-		ffmpeg.ffprobe(videoPath, (err, metadata) => {
-			if (err) return reject(err);
-			const videoStream = metadata.streams.find((s) => s.codec_type === "video");
-			resolve(videoStream?.codec_name || "unknown");
-		});
-	});
-} */
-
-/**
- *添加缩略图
+ * 添加缩略图
  * @param {*} videoPath   原文件路径
  * @param {*} outputPath  输出图片路径
  * @param {*} time 		时间戳
@@ -150,48 +179,31 @@ const mkdirs = (dir) => {
  */
 function generateThumbnail(videoPath, outputPath, time = "00:00:01") {
 	return new Promise((resolve, reject) => {
-		ffmpeg(videoPath)
-			.screenshots({
-				timestamps: [time],
-				filename: path.basename(outputPath),
-				folder: path.dirname(outputPath)
-			})
-			.on("end", () => resolve(outputPath))
-			.on("error", (err) => {
-				console.error("生成缩略图失败:", err);
-				reject(new Error(`无法生成缩略图: ${err.message}`));
-			});
-	});
-}
+		try {
+			const ffmpegPath = getFFmpegPath();
+			console.log("设置 FFmpeg 路径:", ffmpegPath);
+			ffmpeg.setFfmpegPath(ffmpegPath);
 
-/**
- * 文件转码
- * @param {*} inputPath
- * @param {*} outputPath
- * @param {*} options
- * @returns
- */
-function convertVideo(inputPath, outputPath, options = {}) {
-	const defaultOptions = {
-		videoCodec: "libx265",
-		audioCodec: "aac",
-		crf: 23,
-		preset: "medium"
-	};
-	const mergedOptions = { ...defaultOptions, ...options };
+			console.log("开始生成缩略图:", { videoPath, outputPath, time });
 
-	return new Promise((resolve, reject) => {
-		ffmpeg(inputPath)
-			.videoCodec(mergedOptions.videoCodec)
-			.audioCodec(mergedOptions.audioCodec)
-			.outputOptions(["-y", `-crf ${mergedOptions.crf}`, `-preset ${mergedOptions.preset}`])
-			.output(outputPath)
-			.on("end", () => resolve(outputPath))
-			.on("error", (err) => {
-				console.error("视频转码失败:", err);
-				reject(new Error(`视频转码失败: ${err.message}`));
-			})
-			.run();
+			ffmpeg(videoPath)
+				.screenshots({
+					timestamps: [time],
+					filename: path.basename(outputPath),
+					folder: path.dirname(outputPath)
+				})
+				.on("end", () => {
+					console.log("缩略图生成成功:", outputPath);
+					resolve(outputPath);
+				})
+				.on("error", (err) => {
+					console.error("生成缩略图失败:", err);
+					reject(new Error(`无法生成缩略图: ${err.message}`));
+				});
+		} catch (error) {
+			console.error("FFmpeg 初始化失败:", error);
+			reject(error);
+		}
 	});
 }
 
@@ -221,7 +233,7 @@ expressServer.get("/file", async (req, resp) => {
 
 	showCover = showCover == "true" ? true : false;
 	let localPath = await getLocalStore(partType, showCover, fileId);
-	if (!fs.existsSync(localPath) || forceGet == "true") {
+	if (!fs.existsSync(localPath) || (forceGet == "true" && partType== "avatar")) {
 		await downloadFile(fileId, showCover, localPath, partType);
 	}
 	const fileSuffix = localPath.substring(localPath.lastIndexOf(".") + 1);

@@ -52,6 +52,7 @@
 				<div class="title-name">
 					{{ currentChatSession.contactName }}
 					{{
+						currentChatSession.memberCount != undefined &&
 						currentChatSession.memberCount != 0
 							? "(" + currentChatSession.memberCount + ")"
 							: ""
@@ -382,12 +383,28 @@
 	 */
 	const onLocalSessionDataCallback = () => {
 		window.ipcRenderer.on("localSessionDataCallback", (e, sessionList) => {
-			sortUserSession(sessionList);
-			chatSessionList.value = sessionList;
+			// 使用Map合并数据，新数据覆盖旧数据
+			const sessionMap = new Map();
+
+			// 先添加现有会话
+			chatSessionList.value.forEach((session) => {
+				sessionMap.set(session.sessionId, session);
+			});
+
+			// 再添加新会话（会覆盖同ID的旧会话）
+			sessionList.forEach((session) => {
+				sessionMap.set(session.sessionId, session);
+			});
+
+			// 转回数组并赋值
+			chatSessionList.value = Array.from(sessionMap.values());
+
+			// 会话排序（注意：这里应该对合并后的数据排序）
+			sortUserSession(chatSessionList.value);
+
 			// 统计未读数
-			// 计算未读总数
 			const totalNoRead = chatSessionList.value.reduce((sum, item) => {
-				return sum + (item.noReadCount || 0); // 处理可能的 undefined/null
+				return sum + (item.noReadCount || 0);
 			}, 0);
 			messageCountStore.setCount("chatCount", totalNoRead, true);
 
@@ -437,7 +454,8 @@
 				messageCountStore.setCount("contactCount", 1, false);
 				return;
 			}
-			// 好友申请
+
+			// 群聊申请
 			if (message.messageType == 14) {
 				if (route.query && route.query.title == "群聊通知") {
 					window.ipcRenderer.send("clearNoReadCount", {
@@ -501,7 +519,8 @@
 
 			// 排序
 			sortUserSession(chatSessionList.value);
-			// 判断是否选中当前会话
+
+			// （处理消息）判断是否选中当前会话
 			if (
 				currentChatSession.value &&
 				currentChatSession.value.sessionId == session.sessionId
@@ -548,7 +567,7 @@
 			console.log("播放失败：", err);
 		});
 	};
-	
+
 	// 发送消息更新自己的消息聊表、会话
 	const sendMessageLocalHandler = (messageObj) => {
 		messageList.value.push(messageObj);

@@ -131,10 +131,17 @@
 				userInfoStore.changUserInfo();
 				// 强制刷新图片
 				avatarUpdateStore.triggerUpdate(userInfo.value.userId);
+				// 跟新会话信息
+				changeLocalSessionName(userInfoModel.value.nickName, userInfo.value.userId);
 				// 2、跳转路由
 				closeUpdate();
 			}
 		}
+	};
+
+	// 跟新会话信息
+	const changeLocalSessionName = (contactName, contactId) => {
+		window.ipcRenderer.send("updateSessionContentName", { contactName, contactId });
 	};
 
 	nextTick(async () => {

@@ -5,7 +5,8 @@ import { openWindow } from "./ipc";
 import {
 	saveOrUpdateChatSessionBatchInit,
 	saveSession,
-	selectUserSessionByContactId
+	selectUserSessionByContactId,
+	selectUserSessionList
 } from "./database/service/chatUserSessionService";
 import {
 	saveMessage,
@@ -94,7 +95,9 @@ const createWs = (token) => {
 						1,
 						"group_no_read"
 					);
-					// sender.send("reciveMessage", message);
+					
+					// 4、通知渲染进程跟新会话列表
+					updateLocalSessionData(sender);
 					break;
 
 				case 4: //好友申请
@@ -339,4 +342,8 @@ const videoChat = async (useId, recipient) => {
 	await openWindow(param);
 };
 
-
+// 跟新会话
+const updateLocalSessionData = async (e) => {
+	const sessionList = await selectUserSessionList();
+	e.send("localSessionDataCallback", sessionList);
+};

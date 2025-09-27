@@ -104,7 +104,6 @@
 	import windowControlButton from "@/components/windowControlButton.vue";
 	import { setLocalItem } from "@/utils/storage";
 	import { api } from "@/constant/api";
-	import codeError from "@/assets/image/icon/codeError.svg";
 
 	const isLoading = ref(false);
 

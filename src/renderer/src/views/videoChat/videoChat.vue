@@ -362,18 +362,35 @@
 	}
 
 	// 处理收到的answer （呼叫方）
+	let isProcessingAnswer = false;
 	async function handleAnswer(answer) {
+		if (isProcessingAnswer) {
+			addLog("正在处理answer，跳过重复消息");
+			return;
+		}
+
+		isProcessingAnswer = true;
+
 		try {
 			if (!peer) {
 				addLog("无效的peer连接");
 				return;
 			}
 
-			// 设置远程应答描述
+			// 检查当前状态
+			addLog(`当前信令状态: ${peer.signalingState}`);
+
+			if (peer.signalingState !== "have-local-offer") {
+				addLog(`错误的状态，期望: have-local-offer, 实际: ${peer.signalingState}`);
+				return;
+			}
+
 			await peer.setRemoteDescription(new RTCSessionDescription(answer));
-			addLog("收到应答，通话建立成功");
+			addLog("远程应答描述设置成功");
 		} catch (error) {
 			addLog(`处理answer失败: ${error.message}`);
+		} finally {
+			isProcessingAnswer = false;
 		}
 	}
 
